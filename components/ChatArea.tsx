@@ -38,16 +38,15 @@ export default function ChatArea({
   const sendMessage = useMutation(api.messages.sendMessage);
   const deleteMessage = useMutation(api.messages.deleteMessage);
   const setTyping = useMutation(api.typing.setTyping);
+  const clearTyping = useMutation(api.typing.clearTyping);
   const markAsRead = useMutation(api.readReceipts.markAsRead);
 
-  // Mark as read when conversation opens
   useEffect(() => {
     if (conversationId) {
       markAsRead({ conversationId, userId: currentUser._id });
     }
   }, [conversationId, messages]);
 
-  // Auto scroll
   useEffect(() => {
     if (isAtBottom) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -68,6 +67,8 @@ export default function ChatArea({
 
   const handleSend = async () => {
     if (!message.trim() || !conversationId) return;
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    clearTyping({ conversationId, userId: currentUser._id });
     await sendMessage({
       conversationId,
       senderId: currentUser._id,
@@ -81,7 +82,9 @@ export default function ChatArea({
     if (!conversationId) return;
     setTyping({ conversationId, userId: currentUser._id });
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => {}, 2000);
+    typingTimeoutRef.current = setTimeout(() => {
+      clearTyping({ conversationId, userId: currentUser._id });
+    }, 2000);
   };
 
   const formatTimestamp = (timestamp: number) => {

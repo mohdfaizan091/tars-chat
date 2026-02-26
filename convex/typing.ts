@@ -27,6 +27,26 @@ export const setTyping = mutation({
   },
 });
 
+export const clearTyping = mutation({
+  args: {
+    conversationId: v.id("conversations"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("typingIndicators")
+      .withIndex("by_conversation", (q) =>
+        q.eq("conversationId", args.conversationId)
+      )
+      .filter((q) => q.eq(q.field("userId"), args.userId))
+      .first();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { lastTyped: 0 });
+    }
+  },
+});
+
 export const getTypingUsers = query({
   args: {
     conversationId: v.id("conversations"),
